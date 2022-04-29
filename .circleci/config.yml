@@ -25,9 +25,10 @@ orbs:
 #       - run:
 #           name: Revert migrations
 #           when: on_fail
-#           # Add when this will run
-#           command: |
-#             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
+#           # Add when this will run      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]ation associated with the workflow id, store result in SUCCESS variable
 #             SUCCESS = 1
 #             if(( $SUCCESS==1 )); 
 #             then
@@ -140,7 +141,7 @@ jobs:
           command: |
             cd backend
             npm i
-            npm audit fix --audit-level=critical --force
+            npm audit --audit-level=critical --force
 
 #   deploy-infrastructure:
 #     docker:
