@@ -12,12 +12,12 @@ commands:
           when: on_fail
           command: |
             aws s3 rb s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --force
-            aws cloudformation delete-stack --stack-name front-prod-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
           name: Destroy backend
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name back-prod-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
 
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.     
@@ -81,13 +81,7 @@ jobs:
                   "type": "section",
                   "text": {
                 	  "type": "mrkdwn",
-                    "text": "*Job Failed!* :red_circle:\n>*Job:* $CIRCLE_JOB \n>*Link:* $CIRCLE_BUILD_URL \n\n>*Project:* $CIRCLE_PROJECT_REPONAME \n>*Branch:* $CIRCLE_BRANCH \n>*Author:* $CIRCLE_USERNAME"
-                  }
-                }
-              ]
-            }
-            event: fail
-
+                    "text": "*Job Failed!* :red_circle:\n>*Job:* $CIRudacity-project
   test-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -159,16 +153,16 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --stack-name back-prod-${CIRCLE_WORKFLOW_ID:0:7} \
-              --parameter-overrides ID=${CIRCLE_WORKFLOW_ID:0:7} \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
       - run:
           name: Ensure front-end infrastructure exist
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --stack-name front-prod-${CIRCLE_WORKFLOW_ID:0:7} \
-              --parameter-overrides ID=${CIRCLE_WORKFLOW_ID:0:7} \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
       - run:
           name: Add back-end ip to ansible inventory
