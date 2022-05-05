@@ -2,54 +2,32 @@ version: 2.1
 
 commands:
   destroy-aws-resource:
-    description: Destroy all cloudformation stacks given a workflow ID.
+    description: Destroy backend and frontend cloudformation stacks given a workflow ID.
+    parameters:
+      workflow_id:
+        type: string
     steps:
       - run:
-          name: Delete all files in the current S3 bucket
+          name: Destroy environment << parameters.workflow_id >>
           command: |
-            if aws s3api head-bucket --bucket udapeople-s3bucket-${CIRCLE_WORKFLOW_ID:0:7}
-            then
-              aws s3 rm s3://udapeople-s3bucket-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive
-            fi
-          when: on_fail
-      - run:
-          name: Delete the current AWS CloudFormation stacks
-          command: |
-            if aws cloudformation wait stack-exists --stack-name udapeople-cloudfront
-            then 
-              aws cloudformation delete-stack --stack-name udapeople-cloudfront
-            fi
-            if aws cloudformation wait stack-exists --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
-            then 
-              aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
-            fi
-            if aws cloudformation wait stack-exists --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
-            then
-              aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
-            fi
+            aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.workflow_id >>
+            aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.workflow_id >>
+            aws s3 rb s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --force
           when: on_fail
 
   revert-migration:
-    description: Revert the latest migration
+    description: Revert the last migration if successfully run in the current workflow.
     steps:
       - run:
-          name: Get the public DNS of EC2 instance from https://memstash.io/
+          name: Revert migrations
           command: |
-            PUBLIC_DNS=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/public_dns)
-            echo ${PUBLIC_DNS}
-            cd .circleci/ansible/
-            echo "[all]" > ./inventory
-            echo ${PUBLIC_DNS} >> ./inventory
-            cat ./inventory
-          when: on_fail
-      - add_ssh_keys:
-          fingerprints: ["c3:bf:92:8d:97:43:49:28:81:59:da:56:b3:b8:4c:c2"] # get it from CircleCI -> Project Settings -> SSH Keys -> Additional SSH Keys
-      - run:
-          name: Revert the last migration
-          command: |
-            printenv >> ./backend/.env
-            cd .circleci/ansible/
-            ansible-playbook -i ./inventory db_rollback.yml
+            success_migration=$(curl -H "token: 31b97803-fd3d-4659-b2ec-e9c0af61db39" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7})
+            if ((success_migrations == 1));
+            then
+              cd backend
+              npm install
+              npm run migrations:revert
+            fi
           when: on_fail
 
 parameters:
@@ -175,44 +153,40 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
-      # - run:
-      #     name: Delete all S3 buckets whose names start with 'udapeople-s3bucket-'
-      #     command: |
-      #       OLD_BUCKET=$(aws s3api list-buckets --query "Buckets[?starts_with(Name, 'udapeople-s3bucket-')].Name" --output text)
-      #       for bucket in ${OLD_BUCKET}
-      #       do  
-      #           echo deleting bucket $bucket
-      #           aws s3 rb --force s3://$bucket
-      #       done
-
+      - run: yum install -y tar
+      - run: yum install -y gzip
       - run:
-          name: Create/Update frontend infrastructure via AWS CloudFormation vbn
+          name: Ensure back-end infrastructure exists
+          command: |
+            ls -la
+            ls -la .circleci/files
+            aws cloudformation deploy \
+              --template-file ".circleci/files/backend.yml" \
+              --tags project=udapeople \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
+      - run:
+          name: Ensure front-end infrastructure exist
           command: |
             aws cloudformation deploy \
-              --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7} \
               --template-file .circleci/files/frontend.yml \
-              --region ${AWS_DEFAULT_REGION} \
+              --tags project=udapeople \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
-          name: Create/Update backend infrastructure via AWS CloudFormation
+          name: Add back-end ip to ansible inventory
           command: |
-            aws cloudformation deploy \
-              --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7} \
-              --template-file .circleci/files/backend.yml \
-              --region ${AWS_DEFAULT_REGION} \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
-      - run:
-          name: Get and save public DNS of EC2 instance to https://memstash.io/
-          command: |
-            PUBLIC_DNS=$(aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} --filters 'Name=tag:Name,Values=udapeople-backend-ec2-*' --query "Reservations[*].Instances[0].PublicDnsName" --output text)
-            echo ${PUBLIC_DNS}
-            curl -H "Content-Type: text/plain" \
-               -H "token: ${CIRCLE_WORKFLOW_ID}" \
-               --request PUT \
-               --data ${PUBLIC_DNS} \
-               https://api.memstash.io/values/public_dns
+            pwd
+            ls -la
+            cat .circleci/ansible/inventory.txt
+            aws cloudformation \
+              list-exports --query "Exports[?Name==\`backendIP\`].Value" \
+              --no-paginate --output text >> .circleci/ansible/inventory.txt
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/.circleci/ansible/inventory.txt
       - destroy-aws-resource
-      # - slack/status
 
 #   deploy-backend:
 #     docker:
