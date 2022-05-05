@@ -80,8 +80,8 @@ jobs:
           command: |
             cd frontend
             npm run build
-      - slack/status:
-          event: fail
+      # - slack/status:
+      #     event: fail
 
 #   test-frontend:
 #     docker:
@@ -132,8 +132,8 @@ jobs:
           command: |
             cd backend
             npm run build
-      - slack/status:
-          event: fail
+      # - slack/status:
+      #     event: fail
 
 #   test-backend:
 #     docker:
@@ -149,14 +149,8 @@ jobs:
 #           name: Test the code
 #           command: |
 #             cd backend
-#             npm run test
-#       - slack/status
-
-#   analyze-backend:
-#     docker:
-#       - image: << pipeline.parameters.circleci_image >>
-#     steps:
-#       - checkout
+#             npm run test      # - slack/status:
+      #     event: fail
 #       - run:
 #           name: Install dependencies
 #           command: |
