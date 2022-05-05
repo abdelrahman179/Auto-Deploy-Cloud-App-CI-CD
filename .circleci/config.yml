@@ -357,7 +357,7 @@ jobs:
 #       - slack/status
 
 workflows:
-  frontend:
+  default:
     jobs:
       - hello:
           filters:
@@ -381,8 +381,6 @@ workflows:
 #           filters:
 #             branches:
 #               ignore: master
-  backend:
-    jobs:
       - hello:
           filters:
             branches:
@@ -405,8 +403,6 @@ workflows:
 #           filters:
 #             branches:
 #               ignore: master
-#   deploy:
-#     jobs:
 #       - create-new-infrastructure:
 #           filters:
 #             branches:
