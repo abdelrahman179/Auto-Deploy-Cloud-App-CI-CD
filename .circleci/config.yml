@@ -100,22 +100,22 @@ jobs:
             npm run test
 #       - slack/status
 
-#   analyze-frontend:
-#     docker:
-#       - image: << pipeline.parameters.circleci_image >>
-#     steps:
-#       - checkout
-#       - run:
-#           name: Install dependencies
-#           command: |
-#             cd frontend
-#             npm install
-#       - run:
-#           name: Analyze the code
-#           command: |
-#             cd frontend
-#             npm audit fix --audit-level=critical --force
-#       - slack/status
+  analyze-frontend:
+    docker:
+      - image: << pipeline.parameters.circleci_image >>
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            cd frontend
+            npm install
+      - run:
+          name: Analyze the code
+          command: |
+            cd frontend
+            npm audit fix --audit-level=critical --force
+      # - slack/status
 
   build-backend:
     docker:
@@ -152,22 +152,22 @@ jobs:
             npm run test
       # - slack/status
 
-  # analyze-backend:
-  #   docker:
-  #     - image: << pipeline.parameters.circleci_image >>
-  #   steps:
-  #     - checkout
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           cd backend
-  #           npm install
-  #     - run:
-  #         name: Analyze the code
-  #         command: |
-  #           cd backend
-  #           npm audit fix --audit-level=critical --force
-  #     - slack/status
+  analyze-backend:
+    docker:
+      - image: << pipeline.parameters.circleci_image >>
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            cd backend
+            npm install
+      - run:
+          name: Analyze the code
+          command: |
+            cd backend
+            npm audit fix --audit-level=critical --force
+      # - slack/status
 
 #   create-new-infrastructure:
 #     docker:
@@ -351,22 +351,16 @@ workflows:
       - test-frontend:
           requires:
             - build-frontend
-#       - analyze-frontend:
-#           requires:
-#             - test-frontend
-#           filters:
-#             branches:
-#               ignore: master
+      - analyze-frontend:
+          requires:
+            - test-frontend
       - build-backend
       - test-backend:
           requires:
             - build-backend
-#       - analyze-backend:
-#           requires:
-#             - test-backend
-#           filters:
-#             branches:
-#               ignore: master
+      - analyze-backend:
+          requires:
+            - test-backend
 #       - create-new-infrastructure:
 #           filters:
 #             branches:
