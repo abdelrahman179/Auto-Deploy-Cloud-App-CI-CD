@@ -29,28 +29,28 @@ commands:
             fi
           when: on_fail
 
-#   revert-migration:
-#     description: Revert the latest migration
-#     steps:
-#       - run:
-#           name: Get the public DNS of EC2 instance from https://memstash.io/
-#           command: |
-#             PUBLIC_DNS=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/public_dns)
-#             echo ${PUBLIC_DNS}
-#             cd .circleci/ansible/
-#             echo "[all]" > ./inventory
-#             echo ${PUBLIC_DNS} >> ./inventory
-#             cat ./inventory
-#           when: on_fail
-#       - add_ssh_keys:
-#           fingerprints: ["c3:bf:92:8d:97:43:49:28:81:59:da:56:b3:b8:4c:c2"] # get it from CircleCI -> Project Settings -> SSH Keys -> Additional SSH Keys
-#       - run:
-#           name: Revert the last migration
-#           command: |
-#             printenv >> ./backend/.env
-#             cd .circleci/ansible/
-#             ansible-playbook -i ./inventory db_rollback.yml
-#           when: on_fail
+  revert-migration:
+    description: Revert the latest migration
+    steps:
+      - run:
+          name: Get the public DNS of EC2 instance from https://memstash.io/
+          command: |
+            PUBLIC_DNS=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/public_dns)
+            echo ${PUBLIC_DNS}
+            cd .circleci/ansible/
+            echo "[all]" > ./inventory
+            echo ${PUBLIC_DNS} >> ./inventory
+            cat ./inventory
+          when: on_fail
+      - add_ssh_keys:
+          fingerprints: ["c3:bf:92:8d:97:43:49:28:81:59:da:56:b3:b8:4c:c2"] # get it from CircleCI -> Project Settings -> SSH Keys -> Additional SSH Keys
+      - run:
+          name: Revert the last migration
+          command: |
+            printenv >> ./backend/.env
+            cd .circleci/ansible/
+            ansible-playbook -i ./inventory db_rollback.yml
+          when: on_fail
 
 parameters:
   circleci_image:
@@ -169,6 +169,7 @@ jobs:
             npm audit fix --audit-level=critical --force
       # - slack/status
 
+
   create-new-infrastructure:
     docker:
       - image: amazon/aws-cli
@@ -203,7 +204,10 @@ jobs:
           name: Get and save public DNS of EC2 instance to https://memstash.io/
           command: |
             PUBLIC_DNS=$(aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} --filters 'Name=tag:Name,Values=udapeople-backend-ec2-*' --query "Reservations[*].Instances[0].PublicDnsName" --output text)
-            echo ${PUBLIC_DNS}      # - slack/status
+            echo ${PUBLIC_DNS}
+            curl -H "Content-Type: text/plain" \
+               -H "token: ${CIRCLE_WORKFLOW_ID}" \
+               --request PUT \
                --data ${PUBLIC_DNS} \
                https://api.memstash.io/values/public_dns
       - destroy-aws-resource
