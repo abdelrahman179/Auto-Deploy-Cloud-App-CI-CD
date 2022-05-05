@@ -80,8 +80,8 @@ jobs:
           command: |
             cd frontend
             npm run build
-      - slack/status:
-          fail_only: true
+      # - slack/status:
+      #     fail_only: true
 
 #   test-frontend:
 #     docker:
@@ -132,8 +132,8 @@ jobs:
           command: |
             cd backend
             npm run build
-      - slack/status:
-          fail_only: true
+      # - slack/status:
+      #     fail_only: true
 
 #   test-backend:
 #     docker:
