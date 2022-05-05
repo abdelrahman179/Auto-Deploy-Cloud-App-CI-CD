@@ -92,7 +92,8 @@ jobs:
           command: |
             cd frontend
             npm run build
-      - slack/status
+      - slack/status:
+          fail_only: true
 
 #   test-frontend:
 #     docker:
@@ -143,7 +144,8 @@ jobs:
           command: |
             cd backend
             npm run build
-      - slack/status
+      - slack/status:
+          fail_only: true
 
 #   test-backend:
 #     docker:
@@ -361,12 +363,12 @@ workflows:
           filters:
             branches:
               ignore: master
-#       - build-frontend:
-#           requires:
-#             - hello
-#           filters:
-#             branches:
-#               ignore: master
+      - build-frontend:
+          requires:
+            - hello
+          filters:
+            branches:
+              ignore: master
 #       - test-frontend:
 #           requires:
 #             - build-frontend
