@@ -61,7 +61,7 @@ parameters:
     default: python:3.7-alpine3.11
 
 orbs:
-  slack: circleci/slack@4.1  
+  slack: circleci/slack@4.10.1
   aws-cli: circleci/aws-cli@1.3.0
 
 jobs:
