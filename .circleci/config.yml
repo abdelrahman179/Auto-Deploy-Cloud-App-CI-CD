@@ -275,10 +275,14 @@ jobs:
           name: Run migrations
           command: |
             cd backend
-            npm install
-            # sudo npm install npm@latest -g
-            # sudo npm audit fix --force
-            # sudo npm fund
+            npm install npm@latest -g
+            n stable
+            npm cache clean -f
+            npm install --save --legacy-peer-deps
+            npm config set legacy-peer-deps true
+            npm install                      
+            npm audit fix --force
+            npm fund
             npm run build
             npm run migrations > migration_result.txt
             cat migration_result.txt
