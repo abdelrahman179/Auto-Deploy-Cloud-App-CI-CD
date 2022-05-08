@@ -11,13 +11,13 @@ commands:
           name: Destroy frontend
           when: on_fail
           command: |
-            aws s3 rb s3://udapeople-${CIRCLE_WORKFLOW_ID} --force
-            aws cloudformation delete-stack --stack-name front-prod-${CIRCLE_WORKFLOW_ID}
+            aws s3 rb s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --force
+            aws cloudformation delete-stack --stack-name front-prod-${CIRCLE_WORKFLOW_ID:0:7}
       - run:
           name: Destroy backend
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name back-prod-${CIRCLE_WORKFLOW_ID}
+            aws cloudformation delete-stack --stack-name back-prod-${CIRCLE_WORKFLOW_ID:0:7}
 
 
   revert-migrations:
@@ -27,7 +27,7 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |
-            success_migration=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID})
+            success_migration=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID})
             if((${success_migration}==1));
             then
               cd ~/project/backend
@@ -159,39 +159,42 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install dependencies
+          command: |
+            yum -y install tar
+            yum -y install gzip
+      - run:
           name: Ensure back-end infrastructure exists
           command: |
-            aws cloudformation deploy --template-file .circleci/files/backend.yml --tags project=udapeopleBack-tag --stack-name udaPeopleBack-${CIRCLE_WORKFLOW_ID} --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}
-            URLS=$(aws ec2 describe-instances --region eu-central-1 --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
-            echo "url=$URLS"
-            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "$URLS" https://api.memstash.io/values/url_${CIRCLE_WORKFLOW_ID}
+            aws cloudformation deploy \
+              --template-file .circleci/files/backend.yml \
+              --stack-name back-prod-${CIRCLE_WORKFLOW_ID:0:7} \
+              --parameter-overrides ID=${CIRCLE_WORKFLOW_ID:0:7} \
+              --tags project=udacity-project
       - run:
           name: Ensure front-end infrastructure exist
           command: |
-            aws cloudformation deploy --template-file .circleci/files/frontend.yml --tags project=udapeopleFront-tag --stack-name udaPeopleFront-${CIRCLE_WORKFLOW_ID} --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}
-            ARN=$(aws s3 ls)
-            echo "ARN=$ARN"
-            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "$ARN" https://api.memstash.io/values/arn_${CIRCLE_WORKFLOW_ID}
+            aws cloudformation deploy \
+              --template-file .circleci/files/frontend.yml \
+              --stack-name front-prod-${CIRCLE_WORKFLOW_ID:0:7} \
+              --parameter-overrides ID=${CIRCLE_WORKFLOW_ID:0:7} \
+              --tags project=udacity-project
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-             cd .circleci/ansible
-             URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/url_${CIRCLE_WORKFLOW_ID})
-             echo "$URL" >> inventory.txt
-             cat inventory.txt
-      - run:
-          name: Dependencies
-          command: |
-            cat .circleci/ansible/inventory.txt
-            ls ~/project/.circleci/ansible/
-            cat ~/project/.circleci/ansible/inventory.txt
-            yum -y install tar gzip jq npm
+            echo "[web]" > .circleci/ansible/inventory.txt
+            BACKEND_IP=$(aws ec2 describe-instances \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --output text)
+            curl -H "Content-Type: text/plain" -H "token: 440bb73b-b904-44f1-ab72-71ade8f9b9e1" --request PUT --data ${BACKEND_IP} https://api.memstash.io/values/UdaPeople-${CIRCLE_WORKFLOW_ID:0:7}-BackendIP
+            echo ${BACKEND_IP} >> .circleci/ansible/inventory.txt
       - persist_to_workspace:
           root: .circleci/ansible
           paths:
             - inventory.txt
+      - destroy-environment
       # - revert-migrations
-      - destroy-environment # Rollback on failure
 
 #   configure-infrastructure:
 #     docker:
