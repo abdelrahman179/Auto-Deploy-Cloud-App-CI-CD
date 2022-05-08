@@ -38,3 +38,10 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub backend-${ID}
+
+
+# aws sts get-session-token \
+#     --duration-seconds 129600 \
+#     --serial-number arn:aws:iam::128531844412:mfa/root-account-mfa-device \
+#     --token-code 898220
+          
