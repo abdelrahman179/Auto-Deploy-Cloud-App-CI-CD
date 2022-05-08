@@ -243,6 +243,8 @@ jobs:
             npm cache clean -f
             npm install -g n
             n stable
+            npm install --save --legacy-peer-deps
+            npm config set legacy-peer-deps true
       - run:
           name: Run migrations
           no_output_timeout: 30m
