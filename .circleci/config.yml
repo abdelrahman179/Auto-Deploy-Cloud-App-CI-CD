@@ -196,43 +196,44 @@ jobs:
       - destroy-environment
       # - revert-migrations
 
-#   configure-infrastructure:
-#     docker:
-#       - image: python:3.7-alpine3.11
-#     steps:
-#       - checkout
-#       - add_ssh_keys:
-#           fingerprints: ["1d:4f:86:f3:52:8b:ba:cd:fc:bb:01:79:3b:03:2b:f5"]#["18:51:fc:17:a2:fa:63:8e:a7:6f:43:fc:33:cb:95:7c"] # You can get this ID in the section where you registered the SSH Key
-#       - attach_workspace:
-#           at: ~/
-#       - run:
-#           name: Install dependencies
-#           command: |
-#             apk add gzip curl
-#             apk add --update ansible
-#             apk add tar
-#             apk add gzip
-#             pip install awscli
-#       - run:
-#           name: Configure server
-#           command: |
-#             echo ENVIRONMENT=production >> ".env"
-#             echo NODE_ENV=production >> ".env"
-#             echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
-#             echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
-#             echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
-#             echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
-#             echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
-#             echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
-#             echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
-#             echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
-#             echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
-#             cd .circleci/ansible
-#             URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/url_${CIRCLE_WORKFLOW_ID})
-#             echo "$URL"
-#             echo "$URL" >> inventory.txt
-#             cat inventory.txt
-#             ansible-playbook -i inventory.txt configure-server.yml
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["11:31:c7:e6:de:32:23:14:d1:15:3a:a5:1e:62:b2:21"] # You can get this ID in the section where you registered the SSH Key
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            apk add gzip curl
+            apk add --update ansible
+            apk add tar
+            apk add gzip
+            pip install awscli
+      - run:
+          name: Configure server
+          command: |
+            echo ENVIRONMENT=production >> ".env"
+            echo NODE_ENV=production >> ".env"
+            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
+            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
+            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
+            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
+            cd .circleci/ansible
+            URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/url_${CIRCLE_WORKFLOW_ID:0:7})
+            echo "$URL"
+            echo "$URL" >> inventory.txt
+            cat inventory.txt
+            ansible-playbook -i inventory.txt configure-server.yml
+      - destroy-environment
 
 #   run-migrations:
 #     docker:
@@ -433,8 +434,8 @@ workflows:
           filters:
             branches:
               only: [master]
-      # - configure-infrastructure:
-      #     requires: [deploy-infrastructure]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
       # - run-migrations:
       #     requires: [configure-infrastructure]
       # - deploy-frontend:
