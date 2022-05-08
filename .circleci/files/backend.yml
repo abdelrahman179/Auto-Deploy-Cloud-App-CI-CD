@@ -40,9 +40,8 @@ Resources:
           Value: !Sub backend-${ID}
 
 
-
 # aws sts get-session-token \
-#     --duration-seconds 43200 \
+#     --duration-seconds 129600 \
 #     --serial-number arn:aws:iam::128531844412:mfa/root-account-mfa-device \
-#     --token-code 791714
+#     --token-code 827136
           
