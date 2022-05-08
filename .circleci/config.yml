@@ -6,28 +6,34 @@ orbs:
 commands:
   destroy-environment:
     description: Destroy front-end and back-end cloudformation stacks
+    parameters:
+      workflow_id:
+        type: string
     steps:
       - run:
           name: Destroy frontend
           when: on_fail
           command: |
-            aws s3 rb s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --force
-            aws cloudformation delete-stack --stack-name front-prod-${CIRCLE_WORKFLOW_ID:0:7}
+            aws s3 rb s3://udapeople-<< parameters.workflow_id >> --recursive
+            aws cloudformation delete-stack --stack-name front-prod-<< parameters.workflow_id >>
       - run:
           name: Destroy backend
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name back-prod-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name back-prod-<< parameters.workflow_id >>
 
 
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
+    parameters:
+      workflow_id:
+        type: string
     steps:
       - run:
           name: Revert migrations 
           when: on_fail
           command: |
-            SUCCESS=$(curl --insecure https://kvdb.io/PEJfKF4RGqLJ3iG5SrDpKi/migration_${CIRCLE_WORKFLOW_ID})
+            SUCCESS=$(curl --insecure https://kvdb.io/PEJfKF4RGqLJ3iG5SrDpKi/migration_<< parameters.workflow_id >>)
             if((${SUCCESS}==1));
             then
               cd ~/project/backend
@@ -193,8 +199,9 @@ jobs:
           root: .circleci/ansible
           paths:
             - inventory.txt
-      - destroy-environment
-      # - revert-migrations
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+
 
   configure-infrastructure:
     docker:
@@ -215,18 +222,14 @@ jobs:
           command: |
             export ANSIBLE_HOST_KEY_CHECKING=False
             ansible-playbook -i /tmp/.circleci/ansible/inventory.txt .circleci/ansible/configure-server.yml
-      - destroy-environment
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   run-migrations:
     docker:
       - image: circleci/node:13.8.0
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            apt-get update
-            apt -y install awscli
       - run:
           name: Run migrations
           command: |
@@ -253,12 +256,16 @@ jobs:
             cd backend
             if grep -q "has been executed successfully." migrations.txt
             then
+              echo "Database migration was successful"
               curl https://kvdb.io/PEJfKF4RGqLJ3iG5SrDpKi/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             else
+              echo "Database migration was failed"
               curl https://kvdb.io/PEJfKF4RGqLJ3iG5SrDpKi/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '0'
             fi
-      - revert-migrations
-      - destroy-environment
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
 #   deploy-frontend:
 #     docker:
