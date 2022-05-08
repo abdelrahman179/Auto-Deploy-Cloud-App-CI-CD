@@ -240,14 +240,14 @@ jobs:
           command: |
             apt-get update
             apt -y install awscli
+            npm cache clean -f
+            npm install -g n
+            n stable
       - run:
           name: Run migrations
           no_output_timeout: 30m
           command: |
             cd backend
-            npm cache clean --force
-            npm install -g n
-            n stable
             npm install
             npm audit fix
             npm run migrations > migrations_dump.txt
