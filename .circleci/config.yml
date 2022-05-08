@@ -217,43 +217,33 @@ jobs:
             ansible-playbook -i /tmp/.circleci/ansible/inventory.txt .circleci/ansible/configure-server.yml
       - destroy-environment
 
-#   run-migrations:
-#     docker:
-#       - image: circleci/node:13.8.0
-#     steps:
-#       - checkout
-#       - run:
-#           name: Run migrations
-#           command: |
-#             cd backend && npm i
-#             echo ENVIRONMENT=production >> ".env"
-#             echo NODE_ENV=production >> ".env"
-#             echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
-#             echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
-#             echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
-#             echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
-#             echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
-#             echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
-#             echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
-#             echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
-#             echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
-#             touch migrations.txt
-#             npm run migrations >> migration.txt
-#             cat migrations.txt
-#           no_output_timeout: 30m
-#       - run:
-#           name: Send migration results to memstash
-#           command: |
-#             cd backend
-#             if grep -q "has been executed successfully." migrations.txt
-#             then
-#               curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
-#             else
-#               echo $(curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "0" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID})
-#             fi
-#       - revert-migrations
-#       - destroy-environment:
-#           workflow_id: ${CIRCLE_WORKFLOW_ID}
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+        user: root
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            apt-get update
+            apt -y install awscli
+      - run:
+          name: Run migrations
+          command: |
+            cd backend
+            npm install
+            MIGRATIONS_OUTPUT=$(npm run migrations)
+      - run:
+          name: Send migration results to memstash
+          command: |
+            echo ${MIGRATIONS_OUTPUT}
+            if grep -q "has been executed successfully" ${MIGRATIONS_OUTPUT}; then
+              curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "success" https://api.memstash.io/values/UdaPeople-${CIRCLE_WORKFLOW_ID:0:7}-DBMigrationStatus
+            else
+              curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "failure" https://api.memstash.io/values/UdaPeople-${CIRCLE_WORKFLOW_ID:0:7}-DBMigrationStatus
+            fi
+      - destroy-environment
 
 #   deploy-frontend:
 #     docker:
@@ -418,8 +408,8 @@ workflows:
               only: [master]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
       # - deploy-frontend:
       #     requires: [run-migrations]
       # - deploy-backend:
