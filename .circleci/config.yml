@@ -32,7 +32,7 @@ commands:
             then
               cd ~/project/backend
               npm install
-              npm run migration:revert
+              npm run migrations:revert
             fi
 
 jobs:
@@ -231,24 +231,14 @@ jobs:
       - run:
           name: Run migrations
           command: |
-            cd backend && npm i
-            echo ENVIRONMENT=production >> ".env"
-            echo NODE_ENV=production >> ".env"
-            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
-            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
-            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
-            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
-            echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
-            echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
-            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
-            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
-            MIGRATIONS_OUTPUT=$(npm run migrations)
+            cd backend 
+            npm install
+            npm run migrations > migrations_dump.txt
       - run:
           name: Send migration results to kvdb
           command: |
-            echo ${MIGRATIONS_OUTPUT}
-            if grep -q "has been executed successfully." ${MIGRATIONS_OUTPUT};
+            cat migrations_dump.txt
+            if grep -q "has been executed successfully." ~/project/backend/migrations_dump.txt
             then
               echo "Database migration was successful"
               curl https://kvdb.io/PEJfKF4RGqLJ3iG5SrDpKi/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
