@@ -275,8 +275,6 @@ jobs:
           name: Run migrations
           command: |
             cd backend
-            npm install npm@latest -g
-            n stable
             npm cache clean -f
             npm install --save --legacy-peer-deps
             npm config set legacy-peer-deps true
