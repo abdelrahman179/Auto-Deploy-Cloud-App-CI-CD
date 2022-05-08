@@ -233,13 +233,15 @@ jobs:
           command: |
             cd backend
             npm install
-            npm run migrations > migrations_dump.txt
-            MIGRATIONS_OUTPUT=$(npm run migrations)
+            touch migration.txt
+            npm run migrations >> migration.txt
+            cat migrations.txt
       - run:
           name: Send migration results to memstash
           command: |
-            echo ${MIGRATIONS_OUTPUT}
-            if grep -q "has been executed successfully" ${MIGRATIONS_OUTPUT}; then
+            cd backend
+            if grep -q "has been executed successfully." migrations.txt
+            then
               curl https://kvdb.io/PEJfKF4RGqLJ3iG5SrDpKi/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             fi
       - destroy-environment
