@@ -204,35 +204,17 @@ jobs:
       - add_ssh_keys:
           fingerprints: ["11:31:c7:e6:de:32:23:14:d1:15:3a:a5:1e:62:b2:21"] # You can get this ID in the section where you registered the SSH Key
       - attach_workspace:
-          at: ~/
+          at: /tmp/.circleci/ansible
       - run:
           name: Install dependencies
           command: |
-            apk add gzip curl
-            apk add --update ansible
-            apk add tar
-            apk add gzip
             pip install awscli
+            apk add --update ansible
       - run:
           name: Configure server
           command: |
-            echo ENVIRONMENT=production >> ".env"
-            echo NODE_ENV=production >> ".env"
-            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
-            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
-            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
-            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
-            echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
-            echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
-            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
-            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
-            cd .circleci/ansible
-            URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/url_${CIRCLE_WORKFLOW_ID:0:7})
-            echo "$URL"
-            echo "$URL" >> inventory.txt
-            cat inventory.txt
-            ansible-playbook -i inventory.txt configure-server.yml
+            export ANSIBLE_HOST_KEY_CHECKING=False
+            ansible-playbook -i /tmp/.circleci/ansible/inventory.txt .circleci/ansible/configure-server.yml
       - destroy-environment
 
 #   run-migrations:
