@@ -183,11 +183,11 @@ jobs:
           name: Get and save public DNS of EC2 instance to https://memstash.io/
           command: |
             cd .circleci/ansible
-            BACKEND_IP=$(aws ec2 describe-instances \
+            IP=$(aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
-            echo ${BACKEND_IP} >> inventory.txt
+            echo ${IP} >> inventory.txt
             cat inventory.txt
       - persist_to_workspace:
           root: .circleci/ansible
@@ -204,34 +204,24 @@ jobs:
       - add_ssh_keys:
           fingerprints: ["11:31:c7:e6:de:32:23:14:d1:15:3a:a5:1e:62:b2:21"] # You can get this ID in the section where you registered the SSH Key
       - attach_workspace:
-          at: ~/project
+          at: ~/
       - run:
           name: Install dependencies
           command: |
-            apk add --update tar gzip ansible nodejs npm curl
+            apk add --update tar gzip ansible nodejs npm curl openssh-client
             pip install awscli
       - run:
           name: Configure server
           no_output_timeout: 30m
           command: |
             export ANSIBLE_HOST_KEY_CHECKING=False
-            echo ENVIROMENT=production > "backend/.env"
-            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
-            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
-            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
-            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
-            echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"
-            echo TYPEORM_PORT=$TYPEORM_PORT >> "backend/.env"
-            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/.env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
-            echo TYPEORM_DATABASE=udapeople-prod >> "backend/.env"
-            cd .circleci/ansible
-            ansible-playbook -i inventory.txt configure-server.yml
+            ansible-playbook -i ~/.circleci/ansible/inventory.txt .circleci/ansible/configure-server.yml
       - destroy-environment
 
   run-migrations:
     docker:
     - image: circleci/node:13.8.0
+      user: root
     steps:
       - checkout
       - attach_workspace:
@@ -241,17 +231,16 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            sudo apt update -y 
-            sudo apt upgrade -y
+            apt update -y 
+            apt upgrade -y
+            apt install tar gzip -y
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
             unzip awscliv2.zip
-            sudo ./aws/install
-            sudo apt install tar gzip -y
+            ./aws/install
       - run:
           name: Run migrations
           command: |
             cd backend
-            npm cache clean -f
             npm install --save --legacy-peer-deps
             npm config set legacy-peer-deps true
             npm install     
@@ -264,7 +253,7 @@ jobs:
           name: Send migration results to kvdb
           command: |
             echo "CIRCLE_WORKFLOW_ID: ${CIRCLE_WORKFLOW_ID:0:7}"
-            cat ~/project/backend/migrations_dump.txt
+            cat ~/backend/migrations_dump.txt
             cd backend
             if grep -q "has been executed successfully."  migrations_dump.txt
             then
