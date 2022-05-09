@@ -384,12 +384,12 @@ jobs:
       - run:
           name: Frontend smoke test.
           command: |
-            URL="http://udapeople-aa1j287dhjppmz179.s3-website-us-east-1.amazonaws.com"
+            URL="http://udapeople-aa1j287dhjppmz179.s3-website-us-east-1.amazonaws.com/#/employees"
             if curl -s ${URL} | grep "Welcome"
             then
               return 1
             else
-              return 0
+              return 1
             fi
       - revert-migrations
       - destroy-environment
