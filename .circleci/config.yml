@@ -377,15 +377,12 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Get backend url
+          name: Backend smoke test.
           command: |
             export IP=$(aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
-      - run:
-          name: Backend smoke test.
-          command: |
             echo BACKEND_IP: http://${IP}:3030/api/status
             if curl -s http://${IP}:3030/api/status | grep "ok"
             then
