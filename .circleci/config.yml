@@ -245,7 +245,6 @@ jobs:
             npm config set legacy-peer-deps true
             npm install     
             npm audit fix --audit-level=critical --force
-            npm audit --audit-level=critical   
             npm run migrations > migrations_dump.txt
             echo "migration file"
             cat migrations_dump.txt
