@@ -222,6 +222,16 @@ jobs:
     docker:
     - image: circleci/node:13.8.0
       user: root
+      environment:
+        VERSION: "1"
+        TYPEORM_CONNECTION: $TYPEORM_CONNECTION
+        TYPEORM_HOST: $TYPEORM_HOST
+        TYPEORM_USERNAME: $TYPEORM_USERNAME
+        TYPEORM_PASSWORD: $TYPEORM_PASSWORD
+        TYPEORM_DATABASE: $TYPEORM_DATABASE
+        TYPEORM_PORT: $TYPEORM_PORT
+        TYPEORM_ENTITIES: $TYPEORM_ENTITIES
+        ANSIBLE_HOST_KEY_CHECKING: False
     steps:
       - checkout
       - attach_workspace:
@@ -231,16 +241,33 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apt-get update
-            apt -y install awscli
+            apt-get update -y 
+            apt upgrade -y
+            apt install tar gzip -y
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            ./aws/install
+      - run:
+          name: enviroment variables
+          command:  |
+              cd backend
+              echo "TYPEORM_CONNECTION=${TYPEORM_CONNECTION}" >> .env
+              echo "TYPEORM_ENTITIES=${TYPEORM_ENTITIES}" >> .env
+              echo "TYPEORM_HOST=${TYPEORM_HOST}" >> .env
+              echo "TYPEORM_PORT=${TYPEORM_PORT}" >> .env
+              echo "TYPEORM_USERNAME=${TYPEORM_USERNAME}" >> .env
+              echo "TYPEORM_PASSWORD=password" >> .env
+              echo "TYPEORM_DATABASE=${TYPEORM_DATABASE}" >> .env
+              echo "TYPEORM_MIGRATIONS=${TYPEORM_MIGRATIONS}" >> .env
+              echo "TYPEORM_MIGRATIONS_DIR=${TYPEORM_MIGRATIONS_DIR}" >> .env
+              cat .env
+              echo $TYPEORM_MIGRATIONS_DIR
       - run:
           name: Run migrations
           command: |
             cd backend
             npm cache clean --force
-            rm -rf node_modules package-lock.json
             npm install
-            npm run build
             npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical   
             npm run migrations > migrations_dump.txt
