@@ -379,19 +379,34 @@ jobs:
       - run:
           name: Backend smoke test.
           command: |
-            export IP=$(aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --output text)
-            echo BACKEND_IP: http://${IP}:3030/api/status
-            if curl -s http://${IP}:3030/api/status | grep "ok"
+            BACKEND_IP=$(aws cloudformation \
+              list-exports --query "Exports[?Name==\`backendIP\`].Value" \
+              --no-paginate --output text)
+            BACKEND_URL="http://${BACKEND_IP}:3030/api/status"
+            echo "Backend url: ${BACKEND_URL}"
+            curl -s ${BACKEND_URL} | grep "\"status\":\"ok\""
+            if [$(api_status) = "ok"]
             then
-              echo "Backend Smoke Test Success"
-              exit 0
+              echo "Frontend Smoke Test Success"
+              return 1
             else
               echo "Backend Smoke Test Failed"
-              exit 1
+              return 0
             fi
+          # command: |
+          #   export IP=$(aws ec2 describe-instances \
+          #     --query 'Reservations[*].Instances[*].PublicIpAddress' \
+          #     --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+          #     --output text)
+          #   echo BACKEND_IP: http://${IP}:3030/api/status
+          #   if curl -s http://${IP}:3030/api/status | grep "ok"
+          #   then
+          #     echo "Backend Smoke Test Success"
+          #     exit 0
+          #   else
+          #     echo "Backend Smoke Test Failed"
+          #     exit 1
+          #   fi
       - run:
           name: Frontend smoke test.
           command: |
