@@ -11,7 +11,7 @@ commands:
           name: Destroy frontend
           when: on_fail
           command: |
-            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --force
+            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
             aws cloudformation delete-stack --stack-name front-prod-${CIRCLE_WORKFLOW_ID:0:7}
       - run:
           name: Destroy backend
@@ -385,17 +385,24 @@ jobs:
           name: Backend smoke test.
           command: |
             export API_URL="http://${IP}:3030/api/status"
+            if curl -s http://${IP}:3030/api/status | grep "ok"
+            then
+              echo "Backend Smoke Test Success"
+              exit 0
+            else
+              echo "Backend Smoke Test Failed"
+              exit 1
+            fi
       - run:
           name: Frontend smoke test.
           command: |
-            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com"
-            if curl -s ${URL} | grep "Welcome"
+            echo http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/
+            if curl -s http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/ | grep "Welcome"
             then
-              return 1
-            else
+              echo "Frontend Smoke Test Success"
               return 0
-            fi
-      - revert-migrations
+            else
+              echo "Frontend Smoke Test Failed"BACKEND_IP
       - destroy-environment
 
 #   cloudfront-update:
