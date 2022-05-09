@@ -289,27 +289,33 @@ jobs:
 
   deploy-frontend:
     docker:
-      - image: amazon/aws-cli
+      - image: circleci/node:13.8.0
+        user: root
     steps:
       - checkout
       - run:
           name: Install dependencies
           command: |
-            curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
-            yum -y install nodejs
-            yum -y install tar gzip
+            apt-get update
+            apt -y install awscli
       - run:
-          name: Get backend url
+          name: Set env variables
           command: |
-            IP=$(aws ec2 describe-instances \
+            BACKEND_IP=$(aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
-            export API_URL="http://${IP}:3030"
+            export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
+            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            echo ENVIRONMENT=production  >> frontend/.env
+            echo NODE_ENV=production >> frontend/.env
+            cat frontend/.env
+      - run:
+          name: Build frontend objects
+          command: |
             cd frontend
-            npm update
-            npm run install
+            npm i
             npm run build
       - run:
           name: Deploy frontend objects
@@ -335,14 +341,16 @@ jobs:
             apk add gzip curl
             apk add --update tar gzip ansible nodejs npm
             pip install awscli
+      - run: 
+          name: install node modules
+          command: | 
+            cd backend
+            npm i
+            npm run build
       - run:
           name: Deploy backend
           no_output_timeout: 30m
           command: |           
-            cd backend
-            npm i
-            npm run build
-            cd ..
             tar -C backend -czvf artifact.tar.gz .
             cd .circleci/ansible
             IP=$(aws ec2 describe-instances \
