@@ -399,6 +399,7 @@ jobs:
               return 0
             else
               echo "Frontend Smoke Test Failed"BACKEND_IP
+            fi
       - destroy-environment
 
   cloudfront-update:
