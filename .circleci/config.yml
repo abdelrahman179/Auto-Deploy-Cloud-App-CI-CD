@@ -339,31 +339,20 @@ jobs:
           name: Install dependencies
           command: |
             apk add gzip curl
-            apk add --update tar gzip ansible nodejs npm
+            apk add --update tar gzip ansible npm nodejs 
             pip install awscli
       - run: 
           name: install node modules
           command: | 
             cd backend
             npm i
-            
-            echo ENVIROMENT=development > ".env"
-            echo TYPEORM_CONNECTION=postgres >> ".env"
-            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> ".env"
-            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> ".env"
-            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> ".env"
-            echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
-            echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
-            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
-            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
             npm run build
-            npm run prestart:prod
+            cd .. 
+            tar -C backend -czvf artifact.tar.gz .
       - run:
           name: Deploy backend
           no_output_timeout: 30m
           command: |           
-            tar -C backend -czvf artifact.tar.gz .
             cd .circleci/ansible
             IP=$(aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
@@ -395,6 +384,7 @@ jobs:
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
+            export BACKEND_IP
             BACKEND_URL="http://${BACKEND_IP}:3030/api/status"
             echo "Backend url: ${BACKEND_URL}"
             curl -s ${BACKEND_URL} | grep "\"status\":\"ok\""
@@ -406,20 +396,6 @@ jobs:
               echo "Backend Smoke Test Failed"
               return 0
             fi
-          # command: |
-          #   export IP=$(aws ec2 describe-instances \
-          #     --query 'Reservations[*].Instances[*].PublicIpAddress' \
-          #     --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-          #     --output text)
-          #   echo BACKEND_IP: http://${IP}:3030/api/status
-          #   if curl -s http://${IP}:3030/api/status | grep "ok"
-          #   then
-          #     echo "Backend Smoke Test Success"
-          #     exit 0
-          #   else
-          #     echo "Backend Smoke Test Failed"
-          #     exit 1
-          #   fi
       - run:
           name: Frontend smoke test.
           command: |
