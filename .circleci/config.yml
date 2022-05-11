@@ -160,12 +160,7 @@ jobs:
               --parameter-overrides ID=${CIRCLE_WORKFLOW_ID:0:7} \
               --tags project=udacity-project
       - run:
-          name: Get and save public DNS of EC2 instance 
-          command: |
-            cd .circleci/ansible
-            echo "[web]" > inventory.txt
-            IP=$(aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+          name: Get and save public DNS of EC2 instance .circleci/ansible/Address' \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
             echo ${IP} >> inventory.txt
@@ -345,8 +340,7 @@ jobs:
           name: build zip file
           command: |
             cd /root/project/
-            tar -zcvf api.tar.gz backend/
-            mv api.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
+            tar -C backend -czvf artifact.tar.gz .
       - run:
           name: Deploy backend
           no_output_timeout: 30m
