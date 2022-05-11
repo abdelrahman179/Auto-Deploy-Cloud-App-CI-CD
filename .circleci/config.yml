@@ -329,6 +329,7 @@ jobs:
   deploy-backend:
     docker:
       - image: python:3.7-alpine3.11
+        user: root
     steps:
       - checkout
       - add_ssh_keys:
@@ -361,7 +362,8 @@ jobs:
             echo "$IP"
             echo "$IP" >> inventory.txt
             cat inventory.txt
-            ansible-playbook -i inventory.txt deploy-backend.yml
+            export ANSIBLE_HOST_KEY_CHECKING=False
+            ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.txt deploy-backend.yml
       - revert-migrations
       - destroy-environment
 
@@ -385,12 +387,9 @@ jobs:
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
             export BACKEND_IP
-            BACKEND_URL="http://${BACKEND_IP}:3030/api/status"
-            echo "Backend url: ${BACKEND_URL}"
-            curl -s ${BACKEND_URL} | grep "\"status\":\"ok\""
-            if [$(api_status) = "ok"]
+            if curl -s http://${BACKEND_IP}:3030/api/status | grep "ok"
             then
-              echo "Frontend Smoke Test Success"
+              echo "Backend Smoke Test Success"
               return 1
             else
               echo "Backend Smoke Test Failed"
