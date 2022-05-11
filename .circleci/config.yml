@@ -67,6 +67,21 @@ jobs:
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
+      # - slack/notify:
+      #     channel: '#udacity'
+      #     event: fail
+      #     custom: |
+      #       {
+      #         "blocks": [
+      #           {
+      #             "type": "section",
+      #             "text": {
+      #           	  "type": "mrkdwn",
+      #               "text": "*Job Failed!* :red_circle:\n>*Job:* $CIRCLE_JOB \n>*Link:* $CIRCLE_BUILD_URL \n\n>*Project:* $CIRCLE_PROJECT_REPONAME \n>*Branch:* $CIRCLE_BRANCH \n>*Author:* $CIRCLE_USERNAME"
+      #             }
+      #           }
+      #         ]
+      #       }
 
 
   test-frontend:
@@ -80,24 +95,6 @@ jobs:
           name: Front-end test
           command: |
             cd frontend && npm i && npm run test
-      - slack/notify:
-          channel: '#general'
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "plain_text",
-                      "text": "*This is a text notification*",
-                      "emoji": true
-                    }
-                  ]
-                }
-              ]
-            }
-          event: fail
 
   test-backend:
     docker:
@@ -110,24 +107,7 @@ jobs:
           name: Back-end test
           command: |
             cd backend && npm i && npm run test
-      - slack/notify:
-          channel: '#general'
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "plain_text",
-                      "text": "*This is a text notification*",
-                      "emoji": true
-                    }
-                  ]
-                }
-              ]
-            }
-          event: fail
+
 
   scan-frontend:
     docker:
@@ -180,9 +160,10 @@ jobs:
               --parameter-overrides ID=${CIRCLE_WORKFLOW_ID:0:7} \
               --tags project=udacity-project
       - run:
-          name: Get and save public DNS of EC2 instance to https://memstash.io/
+          name: Get and save public DNS of EC2 instance 
           command: |
             cd .circleci/ansible
+            echo "[web]" > .circleci/ansible/inventory.txt
             IP=$(aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
@@ -329,13 +310,12 @@ jobs:
   deploy-backend:
     docker:
       - image: python:3.7-alpine3.11
-        user: root
     steps:
       - checkout
       - add_ssh_keys:
           fingerprints: ["11:31:c7:e6:de:32:23:14:d1:15:3a:a5:1e:62:b2:21"]
       - attach_workspace:
-          at: ~/
+          at: /tmp/.circleci/ansible
       - run:
           name: Install dependencies
           command: |
@@ -343,13 +323,30 @@ jobs:
             apk add --update tar gzip ansible npm nodejs 
             pip install awscli
       - run: 
-          name: install node modules
+          name: install node modules and build backend dist
           command: | 
-            cd backend
+            cd /root/project/backend
             npm i
+
+            echo ENVIROMENT=development > ".env"
+            echo TYPEORM_CONNECTION=postgres >> ".env"
+            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> ".env"
+            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> ".env"
+            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> ".env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
+
             npm run build
-            cd .. 
-            tar -C backend -czvf artifact.tar.gz .
+            npm run prestart:prod
+      - run:
+          name: build zip file
+          command: |
+            cd /root/project/
+            tar -zcvf api.tar.gz backend/
+            mv api.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
       - run:
           name: Deploy backend
           no_output_timeout: 30m
@@ -359,7 +356,6 @@ jobs:
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
-            echo "$IP"
             echo "$IP" >> inventory.txt
             cat inventory.txt
             export ANSIBLE_HOST_KEY_CHECKING=False
