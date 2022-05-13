@@ -27,7 +27,7 @@ commands:
           name: Revert migrations 
           when: on_fail
           command: |
-            SUCCESS=$(curl --insecure https://kvdb.io/QDkyZrKeDHx9SEPK7ZJqjt/migration_${CIRCLE_WORKFLOW_ID:0:7})
+            SUCCESS=$(curl --insecure https://kvdb.io/WrzC9mKqehXVTW6CW19Pzr/migration_${CIRCLE_WORKFLOW_ID:0:7})
             if((${SUCCESS}==1));
             then
               cd ~/project/backend
@@ -277,10 +277,10 @@ jobs:
             then
               echo "CIRCLE_WORKFLOW_ID: ${CIRCLE_WORKFLOW_ID:0:7}"
               echo "Database migration was successful"
-              curl https://kvdb.io/QDkyZrKeDHx9SEPK7ZJqjt/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
+              curl https://kvdb.io/WrzC9mKqehXVTW6CW19Pzr/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             else
               echo "Database migration was failed"
-              curl https://kvdb.io/QDkyZrKeDHx9SEPK7ZJqjt/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '0'
+              curl https://kvdb.io/WrzC9mKqehXVTW6CW19Pzr/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '0'
             fi
       - revert-migrations
       - destroy-environment
