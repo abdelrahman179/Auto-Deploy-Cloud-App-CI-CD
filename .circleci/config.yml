@@ -266,10 +266,9 @@ jobs:
               echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
               cat .env
               npm i
-              npm install typescript
               npm run migrations > migration_status.txt
               echo "migration file ...."
-              cat migration_status
+              cat migration_status.txt
       - run:
           name: Send migration results to kvdb
           working_directory: ./backend
