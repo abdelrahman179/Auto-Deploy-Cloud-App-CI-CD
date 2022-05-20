@@ -436,23 +436,29 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Get old stack workflow id and Remove old stacks and files
+          name: Fetch old stack workflow ID
           command: |
             # Fetch the Old workflow ID
             export OldWorkflowID=$(aws cloudformation list-exports --query "Exports[?Name==\`WorkflowID\`].Value" --no-paginate --output text)
-            echo OldWorkflowID: "${OldWorkflowID}"
-            echo CIRCLE_WORKFLOW_ID "${CIRCLE_WORKFLOW_ID:0:7}"
+            echo Old Workflow ID: "${OldWorkflowID}"
+
+            export CURRENT_CIRCLE_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:7}
+            echo Current Workflow ID: "${CURRENT_CIRCLE_WORKFLOW_ID}"
+
             # Fetch the stack names
             export STACKS=$(aws cloudformation list-stacks --query "StackSummaries[*].StackName" --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
             echo Stack names: "${STACKS[@]}"
-            # Remove old stacks and files
-            echo THIS IS THE OldWorkflowID: "${OldWorkflowID}"
-            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+
+            if [[ "${CURRENT_CIRCLE_WORKFLOW_ID}" != "${OldWorkflowID}" ]]
             then
-              aws s3 rb s3://udapeople-${OldWorkflowID} --force
+              echo " ----------- Delete Confirmed ----------- "
+              aws s3 rm s3://udapeople-${OldWorkflowID} --recursive
               aws cloudformation delete-stack --stack-name front-prod-${OldWorkflowID}
               aws cloudformation delete-stack --stack-name back-prod-${OldWorkflowID}
+            else 
+              echo "Old Workflow ID ($OldWorkflowID)== Current Workflow ID ($CURRENT_CIRCLE_WORKFLOW_ID). Then, no need for clean."
             fi
+
       - destroy-environment
       - revert-migrations
 
