@@ -354,7 +354,7 @@ jobs:
           working_directory: ./.circleci/ansible
           command: |
               cat inventory.txt
-              ANSIBLE_HOST_KEY_CHECKING=False
+              export ANSIBLE_HOST_KEY_CHECKING=False
               ansible-playbook -i inventory.txt deploy-backend.yml
       - revert-migrations
       - destroy-environment
