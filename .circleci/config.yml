@@ -414,21 +414,21 @@ jobs:
             curl -o node-v13.14.0-linux-x64.tar.gz https://nodejs.org/dist/latest-v13.x/node-v13.14.0-linux-x64.tar.gz
             tar --strip-components 1 -xzvf node-v* -C /usr/local
       - run:
-          name: Store old WorkflowID in memstash 
+          name: Get old stack Workflow ID
           working_directory: ./.circleci/files
           command: |
-            WorkflowID=$(aws cloudformation \
-              list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
+            export OldWorkflowID=$(aws cloudformation \
+              list-exports --query "Exports[?Name==\'OldWorkflowID\'].Value" \
               --no-paginate --output text)
-            echo ${WorkflowID}
-            aws cloudformation delete-stack --stack-name "${WorkflowID}"
+            echo ${OldWorkflowID}
+            # aws cloudformation delete-stack --stack-name "${OldWorkflowID}"
       - run:
           name: Update cloudfront distribution
           working_directory: ./.circleci/files
           command: |
             aws cloudformation deploy \
               --template-file cloudfront.yml \
-              --stack-name InitialStack \
+              --stack-name "InitialStack-${OldWorkflowID}" \
               --parameter-overrides WorkflowID="udapeople-${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
       - destroy-environment
