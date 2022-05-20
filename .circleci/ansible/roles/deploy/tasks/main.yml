@@ -1,13 +1,13 @@
 ---
 - name: "copy compiled files"
-  Become: yes
+  become: true
   synchronize:
     src: ../../backend/dist
     dest: /home/ubuntu/uda_backend
     recursive: true
 
 - name: "copy node_modules"
-  Become: yes
+  become: true
   synchronize:
     src: ../../backend/node_modules
     dest: /home/ubuntu/uda_backend
