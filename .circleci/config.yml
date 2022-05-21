@@ -415,19 +415,20 @@ jobs:
             tar --strip-components 1 -xzvf node-v* -C /usr/local
       - run:
           name: Update cloudfront distribution
-          working_directory: ./.circleci/files
           command: |
             export OldWorkflowID=$(aws cloudformation list-exports --query "Exports[?Name==\`WorkflowID\`].Value" --no-paginate --output text)
             echo $OldWorkflowID >> ~/OldWorkflowID.txt
-            cat ~/OldWorkflowID.txt
 
             echo Old Workflow ID: "${OldWorkflowID}"
             echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
 
+            aws cloudformation delete-stack --stack-name "${OldWorkflowID}"
+            echo "Old cloud-front distro got deleted ..."
+
             aws cloudformation deploy \
-              --template-file cloudfront.yml \
-              --stack-name InitialStack-${OldWorkflowID} \
-              --parameter-overrides WorkflowID=udapeople-${CIRCLE_WORKFLOW_ID:0:7} \
+              --template-file .circleci/files/cloudfront.yml \
+              --stack-name cloudfront-production-${OldWorkflowID} \
+              --parameter-overrides WorkflowID=${CIRCLE_WORKFLOW_ID:0:7} \
               --tags project=udacity-project
       - persist_to_workspace:
           root: .
