@@ -442,7 +442,7 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - .circleci/files/OldWorkflowID.txt
+            - .
       - destroy-environment
       - revert-migrations
 
