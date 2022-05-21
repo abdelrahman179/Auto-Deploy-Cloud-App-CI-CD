@@ -421,14 +421,14 @@ jobs:
             echo $OldWorkflowID >> ~/OldWorkflowID.txt
             cat ~/OldWorkflowID.txt
 
-            aws cloudformation deploy \
-              --template-file cloudfront.yml \
-              --stack-name "cloudfront-production-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides WorkflowID="udapeople-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --tags project=udapeople
-
             echo Old Workflow ID: "${OldWorkflowID}"
             echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
+
+            aws cloudformation deploy \
+              --template-file cloudfront.yml \
+              --stack-name InitialStack-${OldWorkflowID} \
+              --parameter-overrides WorkflowID=udapeople-${CIRCLE_WORKFLOW_ID:0:7} \
+              --tags project=udacity-project
       - persist_to_workspace:
           root: .
           paths:
@@ -452,13 +452,13 @@ jobs:
             export CURRENT_CIRCLE_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:7}
             echo Current Workflow ID: "${CURRENT_CIRCLE_WORKFLOW_ID}"
 
-            # Fetch the stack names
-            export STACKS=$(aws cloudformation list-stacks --query "StackSummaries[*].StackName" --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
-            echo Stack names: "${STACKS[@]}"
-
             cat ~/OldWorkflowID.txt
             OldWorkflowID=$(cat ~/OldWorkflowID.txt)
             echo Old Workflow ID: "${OldWorkflowID}"
+
+            # Fetch the stack names
+            export STACKS=$(aws cloudformation list-stacks --query "StackSummaries[*].StackName" --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
+            echo Stack names: "${STACKS[@]}"
 
             if [[ "${CURRENT_CIRCLE_WORKFLOW_ID}" != "${OldWorkflowID}" ]]
             then
@@ -469,10 +469,8 @@ jobs:
             else 
               echo "Old Workflow ID ($OldWorkflowID)== Current Workflow ID ($CURRENT_CIRCLE_WORKFLOW_ID). Then, no need for clean"
             fi
-
       - destroy-environment
       - revert-migrations
-
 
 workflows:
   default:
