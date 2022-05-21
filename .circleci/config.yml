@@ -415,7 +415,7 @@ jobs:
             tar --strip-components 1 -xzvf node-v* -C /usr/local
       - run:
           name: Update cloudfront distribution
-          working_directory: .cricleci/files/
+          working_directory: ./.cricleci/files/
           command: |
             export OldWorkflowID=$(aws cloudformation list-exports --query "Exports[?Name==\`WorkflowID\`].Value" --no-paginate --output text)
             echo $OldWorkflowID >> OldWorkflowID.txt
