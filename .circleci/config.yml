@@ -422,14 +422,12 @@ jobs:
             echo Old Workflow ID: "${OldWorkflowID}"
             echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
 
-            aws cloudformation delete-stack --stack-name "${OldWorkflowID}"
-            echo "Old cloud-front distro got deleted ..."
-
             aws cloudformation deploy \
               --template-file .circleci/files/cloudfront.yml \
-              --stack-name cloudfront-production-${OldWorkflowID} \
-              --parameter-overrides WorkflowID=${CIRCLE_WORKFLOW_ID:0:7} \
-              --tags project=udacity-project
+              --stack-name IntialStack-${OldWorkflowID}  \
+              --parameter-overrides WorkflowID="udapeople-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=udapeople
+
       - persist_to_workspace:
           root: .
           paths:
