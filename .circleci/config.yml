@@ -421,7 +421,7 @@ jobs:
             echo $OldWorkflowID >> ~/OldWorkflowID.txt
             cat ~/OldWorkflowID.txt
             echo ${CIRCLE_WORKFLOW_ID:0:7}
-            
+
             aws cloudformation deploy \
               --template-file cloudfront.yml \
               --stack-name "InitialStack-${OldWorkflowID}" \
@@ -429,7 +429,6 @@ jobs:
               --tags project=udapeople
 
             aws cloudformation describe-stack-events --stack-name "InitialStack-${OldWorkflowID}"
-
             echo Old Workflow ID: "${OldWorkflowID}"
             echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
       - persist_to_workspace:
