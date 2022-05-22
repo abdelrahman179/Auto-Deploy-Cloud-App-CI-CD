@@ -491,6 +491,7 @@ jobs:
               aws cloudformation delete-stack --stack-name "front-prod-${OldWorkflowID}"
               aws cloudformation delete-stack --stack-name "back-prod-${OldWorkflowID}"
             fi
+            
       - destroy-environment
       - revert-migrations
 
