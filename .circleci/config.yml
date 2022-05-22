@@ -153,6 +153,7 @@ jobs:
       - run:
           name: Back-end test
           command: |
+            echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
             cd backend && npm i && npm audit fix --audit-level=critical --force
       - save_cache:
           paths: [backend/node_modules]
@@ -193,6 +194,7 @@ jobs:
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text >> ./.circleci/ansible/inventory.txt
             cat ./.circleci/ansible/inventory.txt
+            echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
       - persist_to_workspace:
           root: .
           paths:
@@ -218,6 +220,7 @@ jobs:
           name: Configure server
           no_output_timeout: 60m
           command: |
+            echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
             echo ENVIROMENT=production > "backend/.env"
             echo TYPEORM_CONNECTION=postgres >> "backend/.env"
             echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
@@ -273,6 +276,7 @@ jobs:
           name: Send migration results to kvdb
           working_directory: ./backend
           command: |
+            echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
             if grep -q "has been executed successfully"  migration_status.txt
             then
               echo "CIRCLE_WORKFLOW_ID: ${CIRCLE_WORKFLOW_ID:0:7}"
@@ -305,6 +309,7 @@ jobs:
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
+            echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"  
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
             echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
@@ -354,6 +359,7 @@ jobs:
           working_directory: ./.circleci/ansible
           command: |
               cat inventory.txt
+              echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
               export ANSIBLE_HOST_KEY_CHECKING=False
               ansible-playbook -i inventory.txt deploy-backend.yml
       - revert-migrations
@@ -390,6 +396,7 @@ jobs:
       - run:
           name: Frontend smoke test.
           command: |
+            echo Current Workflow ID: "${CIRCLE_WORKFLOW_ID:0:7}"
             export URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com"
             if curl -s ${URL} | grep "Welcome"
             then
@@ -475,7 +482,7 @@ jobs:
             export STACKS=$(aws cloudformation list-stacks --query "StackSummaries[*].StackName" --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
             echo Stack names: "${STACKS[@]}"
             echo "******************"
-            
+
             aws s3 ls
       - run:
           name: Remove old stacks and files
@@ -483,7 +490,7 @@ jobs:
             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
             then
               echo " ----------- Delete Confirmed ----------- "
-              aws s3 rm s3://${OldWorkflowID} --recursive
+              aws s3 "rm s3://${OldWorkflowID}" --recursive
               aws cloudformation delete-stack --stack-name "front-prod-${OldWorkflowID}"
               aws cloudformation delete-stack --stack-name "back-prod-${OldWorkflowID}"
             fi
