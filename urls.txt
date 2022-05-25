@@ -1,4 +1,11 @@
-[URL01]
+[GitHub]
 https://github.com/abdelrahman179/udacity---Application-CI-CD-
-[URL02]
-https://d25vtjm4kksl3o.cloudfront.net/
+
+[Cloudfront]
+d25vtjm4kksl3o.cloudfront.net
+
+[S3 Bucket]
+https://udapeople-98027a3.s3.amazonaws.com/index.html
+
+[Prometheus]
+http://ec2-54-221-120-104.compute-1.amazonaws.com:9090/targets
